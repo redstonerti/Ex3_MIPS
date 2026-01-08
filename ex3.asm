@@ -3,6 +3,6 @@
 
 __start:
     li $v0, 10
-    syscall
+    syscall #woah
 
 .data
