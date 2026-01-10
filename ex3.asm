@@ -2,54 +2,111 @@
 .globl main
 
 main:
-    li $t0, -1
-    li $t1, -1
-    li $t2, -1
-    li $t3, -1
-    li $t4, -1
-    li $t5, -1
-    li $t6, -1
-    li $t7, -1
+    li $a0, 0                   # create dummy node with data value of 0
+    jal createNode
 
-    li $a0, 8       # $a0 = 8 => request 8 bytes
-    li $v0, 9
-    syscall
+    move $s0, $v0               # save memory address of first node to $s0
 
-    move $s0, $v0   # save memory address of first node to $s0
-
-    # insertNode(8 (data), $s0 (memory address of first node))
     li $a0, 8
     move $a1, $s0
-    jal insertNode
+    jal insertNode              # insertNode(8, $s0)
+
+    li $a0, 10
+    move $a1, $s0
+    jal insertNode              # insertNode(10, $s0)
 
     li $a0, 6
     move $a1, $s0
-    jal insertNode
+    jal insertNode              # insertNode(6, $s0)
 
-    li $a0, 7
+    li $a0, 5
     move $a1, $s0
-    jal insertNode
+    jal insertNode              # insertNode(5, $s0)
 
-    move $a0, $s0
+    li $a0, 5
+    move $a1, $s0
+    jal insertNode              # insertNode(5, $s0)
+
+    move $a0, $s0               # print list
     jal printList
 
-    la $a0, end_msg # print end_msg
+    la $a0, end_msg             # print "Program Terminated"
     li $v0, 4
     syscall
 
-    li $v0, 10      # exit
+    li $v0, 10                  # exit
     syscall
-printList:
+insertNode:
+# arg $a0 = int data value
+# arg $a1 = memory address of first node
+# return value $v0 = memory address of first node
     sub $sp, $sp, 4
     sw $ra, ($sp)
-    #arg $a0 = memory address of first node
+
+    move $t1, $a1               # t1 = memory address of first node
+
+    move $t9, $a0               # save value of $a0 because it will be overwritten
+    jal createNode              # $v0 (memory address of new node) = createNode($a0)
+    move $a0, $t9               # restore value of $a0
+
+insertLoop:
+    lw $t2, ($t1)               # t2 = data value of current node
+
+    blt $a0, $t2, addToMiddle   # if(value to add > value of currentnode), add nodes inbetween
+
+    lw $t3, 4($t1)              # t3 = address current node is pointing to
+    beq $zero, $t3, addToEnd    # if(address = 0), add node to end of list
+
+    move $t4, $t1               # save previousNode
+    lw $t1, 4($t1)              # advance currentNode
+    j insertLoop                # loop
+
+addToEnd:
+    sw $v0, 4($t1)              # link address of new node ($v0) to end of list (4($t1))
+    j exitInsertProcedure
+
+addToMiddle:
+    sw $v0, 4($t4)              # previousNode.next = newNode
+    sw $t1, 4($v0)              # newNode.next = currentNode
+
+    j exitInsertProcedure
+
+exitInsertProcedure:
+    move $v0, $a1               # set return value
+
+    lw $ra, ($sp)
+    add $sp, $sp, 4
+    jr $ra
+createNode:
+# arg $a0 = int data value
+# return value $v0 = memory address of node
+    sub $sp, $sp, 4
+    sw $ra, ($sp)
+
 
     move $t0, $a0
+    #request memory
+    li $a0, 8                   # $a0 = 8 => request 8 bytes
+    li $v0, 9
+    syscall
+
+    sw $t0, ($v0)               #(first 4 bytes of memory requested) = int argument
+    sw $zero, 4($v0)            #(last 4 bytes of memory requested) = 0 (terminator)
+
+    lw $ra, ($sp)
+    add $sp, $sp, 4
+    jr $ra
+printList:
+# arg $a0 = memory address of first node
+# no return value
+    sub $sp, $sp, 4
+    sw $ra, ($sp)
+
+    move $t0, $a0                   # t0 = memory address of first node
 printLoop:
-    # move to next node (skips first on purpose)
-    lw $t1, 4($t0)
-    beq $zero, $t1, exitPrintLoop
-    lw $t0, 4($t0)
+    lw $t1, 4($t0)                  # t1 = address currentNode is pointing to
+    beq $zero, $t1, exitPrintLoop   # if(address = 0), stop printing
+    lw $t0, 4($t0)                  # advance currentNodes
 
     # print integer
     lw $a0, ($t0)
@@ -63,95 +120,12 @@ printLoop:
 
     j printLoop
 exitPrintLoop:
-    # print newline
-    li $a0, '\n'
+    li $a0, '\n'                    # print newline
     li $v0, 11
     syscall
 
-    # no return value
-    lw $ra, ($sp)
-    add $sp, $sp, 4
-    jr $ra
-insertNode:
-    sub $sp, $sp, 4
-    sw $ra, ($sp)
-    #arg $a0 = int data value
-    #arg $a1 = memory address of first node
-
-    li $v0, 1
-    syscall
-
-
-    move $t1, $a1     # t1 = memory address of first node
-
-    # $v0 (memory address of new node) = createNode($a0)
-    jal createNode
-    lw $t3, 4($t1)
-insertLoop:
-    # move to next node (skips first on purpose)
-    lw $t2, 4($t1)
-
-    move $t6, $v0
-    move $t5, $a0
-
-    la $a0, t3_msg # print t3_msg
-    li $v0, 4
-    syscall
-
-    move $a0, $t3,        # print t3
-    li $v0, 1
-    syscall
-
-    li $a0, '\n'        # print new line
-    li $v0, 11
-    syscall
-
-    move $a0, $t5
-    move $v0, $t6
-
-    beq $zero, $t2, addToEnd
-
-    lw $t3, 4($t1)
-    lw $t1, 4($t1)
-
-    j insertLoop
-addToEnd:
-    sw $v0, 4($t1)  # link address of created node ($v0) to end of list (4($t1))
-    j exitInsertProcedure
-addToMiddle:
-    la $a0, loop_msg # print loop_msg
-    li $v0, 4
-    syscall
-
-    li $v0, 10      # exit
-    syscall
-exitInsertProcedure:
-
-
-    move $v0, $a1   #return value $v0 = memory address of first node
-
-    lw $ra, ($sp)
-    add $sp, $sp, 4
-    jr $ra
-createNode:
-    sub $sp, $sp, 4
-    sw $ra, ($sp)
-    #arg $a0 = int data value
-
-    move $t0, $a0
-    #request memory
-    li $a0, 8       # $a0 = 8 => request 8 bytes
-    li $v0, 9
-    syscall
-
-    sw $t0, ($v0)         #(first 4 bytes of memory requested) = int argument
-    sw $zero, 4($v0)      #(last 4 bytes of memory requested) = 0 (terminator)
-
-    #return value $v0 = memory address of node
     lw $ra, ($sp)
     add $sp, $sp, 4
     jr $ra
 .data
 end_msg:  .asciiz "Program terminated!\n"
-loop_msg: .asciiz "Got to addToMiddle!\n"
-t3_msg: .asciiz "\nt3: "
