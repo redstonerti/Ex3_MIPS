@@ -1,10 +1,11 @@
 #ΕΥΤΥΧΙΑΔΗΣ ΑΘΑΝΑΣΙΟΣ 3240055
+#GEORGIOS FITIKIDES 3240244
 	.text
 	.globl main
 
 main:
 	#klitiki akolouthia
-	li $a0, -2147483648	#set argument         
+	li $a0, -2147483648	#set argument
 		# create dummy node with data value of lowest integer
     jal createNode
 	#synexeia
@@ -15,23 +16,23 @@ Menu_Loop:
 	li $v0,4	#print('-------')
 	la $a0,space
 	syscall
-	
+
 	li $v0,4	#print(option1)
 	la $a0,insert
 	syscall
-	
+
 	li $v0,4	#print(option2)
 	la $a0,delete
 	syscall
-	
+
 	li $v0,4	#print(option3)
 	la $a0,show
 	syscall
-	
+
 	li $v0,4	#print(option4)
 	la $a0,exit
 	syscall
-	
+
 	li $v0,4	#print('-------')
 	la $a0,space
 	syscall
@@ -43,7 +44,7 @@ Menu_Loop:
 	li $v0,5	#s7 = readInt() //user's choice
 	syscall
 	move $s7,$v0
-	
+
 	beq $s7,$zero,terminate		#if(choice == 0) goto exit
 	beq $s7,1,callInsert		#if(choice == 1) goto callInsert
 	beq $s7,2,callDelete		#if(choice == 2) goto callDelete
@@ -54,44 +55,44 @@ callInsert:
 	li $v0,4	#print("Give value")
 	la $a0,enterValue
 	syscall
-	
+
 	#klitiki akolouthia
 	li $v0,5	#a0 = readInt() //int to be inserted
 	syscall
 	move $a0,$v0
-	
+
 	move $a1, $s0		#a1 = head address
 
 	jal insertNode 	#insertNode(int $a0, address $a1)
 	#returns head address on $v0
-	
+
 	#synexeia
 	li $v0,4	#print("Value added")
 	la $a0,valueAdded
 	syscall
-	
+
 	j Menu_Loop
 
 
 callDelete:
 	lw $t0,4($s0)	#t0 = dummy_node.next
 	beqz $t0,emptyList	#if (t0 == null) goto emptyList
-	
+
 	li $v0,4	#print("Give value")
 	la $a0,deleteValue
 	syscall
-	
+
 	#klitiki akolouthia
 	li $v0,5	#a0 = readInt() //int to be deleted
 	syscall
 	move $a0,$v0
-	
+
 	move $a1,$s0	#a1 = head address
-	
+
 	jal deleteNode
 	#returns head address on $v0
 	#synexeia
-	
+
 	j Menu_Loop
 
 
@@ -99,24 +100,28 @@ callDelete:
 callShow:
 	lw $t0,4($s0)	#t0 = dummy_node.next
 	beqz $t0,emptyList	#if (t0 == null) goto emptyList
-	
+
 	#klitiki akolouthia
 	move $a0,$s0	#a0 = head address
 	jal printList	#else printList()
-	
+
 	#synexeia
 	j Menu_Loop
-	
+
 
 emptyList:
 	li $v0,4	#print('The List is empty')
 	la $a0,empty
 	syscall
-	
+
 	j Menu_Loop
-	
-	
+
+
 terminate:
+	li $v0, 4		#print('Program terminated!')
+	la $a0, programTerminatedMessage
+	syscall
+
     li $v0, 10      # exit
     syscall
 
@@ -148,7 +153,7 @@ insertNode:
     sw $ra, ($sp)
 
 	#kyrio meros
-  
+
 	#klitiki akolouthia
     addi $sp,$sp,-4              # save value of $a0 because it will be overwritten
 	sw	 $a0,($sp)
@@ -184,7 +189,7 @@ addToMiddle:
 exitInsertProcedure:
     #epilogos
 	move $v0, $a1       # set return value
-	
+
     lw $ra, ($sp)		#restore $ra and return
     add $sp, $sp, 4
     jr $ra
@@ -281,12 +286,12 @@ deleteNode:
 #   current = current.next
 # PRINT "The value wasn't found"
 # RETURN head
-#--------------------------------------	
-	
+#--------------------------------------
+
 	#den exei prologo
-	
+
 	move $t9,$a1	#save address of first node to t9
-	
+
 	move $t0,$a1 	#t0 = previous node
 	lw	 $t1,4($t0)	#t1 = current node
 deleteLoop:
@@ -297,29 +302,29 @@ deleteLoop:
 	move $t0,$t1	#new previous = old current
 	move $t1,$t3	#new current = old next
 	j deleteLoop
-	
-	
+
+
 notFound:
 	li $v0,4	#print("The value wasn't found")
 	la $a0,notFoundmessage
 	syscall
-	
+
 	j exitDelete	#goto exitDelete
-	
+
 del:
-	sw  $t3,4($t0)	#previousnode.next = current.next	
-	
+	sw  $t3,4($t0)	#previousnode.next = current.next
+
 	li $v0,4	#print("Value deleted")
 	la $a0,valueDeleted
 	syscall
-	
-	
-	
-exitDelete:	
+
+
+
+exitDelete:
 	#epilogos
 	move $v0, $a1     # set return value v0 = memory address of first node
-	jr $ra			  #return 
-	
+	jr $ra			  #return
+
 
 
 	.data
@@ -335,3 +340,4 @@ deleteValue:	.asciiz "Delete a value\n"
 valueAdded:	.asciiz "Value added.\n"
 valueDeleted:	.asciiz "Value deleted.\n"
 notFoundmessage:	.asciiz "The value you entered wasn't found.\n"
+programTerminatedMessage:	.asciiz "Program terminated!\n"
