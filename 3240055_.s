@@ -1,9 +1,13 @@
+#ΕΥΤΥΧΙΑΔΗΣ ΑΘΑΝΑΣΙΟΣ 3240055
 	.text
 	.globl main
 
 main:
-	li $a0, 0                   # create dummy node with data value of 0
+	#klitiki akolouthia
+	li $a0, -2147483648	#set argument         
+		# create dummy node with data value of lowest integer
     jal createNode
+	#synexeia
 	move $s0, $v0               # save memory address of first node to $s0
 
 Menu_Loop:
@@ -51,6 +55,7 @@ callInsert:
 	la $a0,enterValue
 	syscall
 	
+	#klitiki akolouthia
 	li $v0,5	#a0 = readInt() //int to be inserted
 	syscall
 	move $a0,$v0
@@ -60,6 +65,7 @@ callInsert:
 	jal insertNode 	#insertNode(int $a0, address $a1)
 	#returns head address on $v0
 	
+	#synexeia
 	li $v0,4	#print("Value added")
 	la $a0,valueAdded
 	syscall
@@ -75,6 +81,7 @@ callDelete:
 	la $a0,deleteValue
 	syscall
 	
+	#klitiki akolouthia
 	li $v0,5	#a0 = readInt() //int to be deleted
 	syscall
 	move $a0,$v0
@@ -83,6 +90,7 @@ callDelete:
 	
 	jal deleteNode
 	#returns head address on $v0
+	#synexeia
 	
 	j Menu_Loop
 
@@ -92,9 +100,11 @@ callShow:
 	lw $t0,4($s0)	#t0 = dummy_node.next
 	beqz $t0,emptyList	#if (t0 == null) goto emptyList
 	
+	#klitiki akolouthia
 	move $a0,$s0	#a0 = head address
 	jal printList	#else printList()
 	
+	#synexeia
 	j Menu_Loop
 	
 
@@ -110,23 +120,49 @@ terminate:
     li $v0, 10      # exit
     syscall
 
+
+
+
 insertNode:
 # arg $a0 = int data value
 # arg $a1 = memory address of first node
 # return value $v0 = memory address of first node
-    sub $sp, $sp, 4
+#--------------------------------------
+# def insertNode(value, head):
+# current = head
+# newNode = createNode(value)
+# WHILE TRUE
+#   IF value < current.value
+#     previous.next = newNode
+#     newNode.next = current
+#     RETURN head
+#   IF current.next = NULL
+#     current.next = newNode
+#     RETURN head
+#   previous = current
+#   current = current.next
+#--------------------------------------
+
+	#prologos
+    sub $sp, $sp, 4	#save $ra
     sw $ra, ($sp)
 
-    move $t1, $a1               # t1 = memory address of first node
-
-    move $t9, $a0               # save value of $a0 because it will be overwritten
+	#kyrio meros
+  
+	#klitiki akolouthia
+    addi $sp,$sp,-4              # save value of $a0 because it will be overwritten
+	sw	 $a0,($sp)
+	#$a0 = int data value
     jal createNode              # $v0 (memory address of new node) = createNode($a0)
-    move $a0, $t9               # restore value of $a0
+    lw  $a0,($sp)        		# restore value of $a0
+	addi $sp,$sp,4
+	#synexeia
 
+	move $t1, $a1               # t1 = memory address of first node
 insertLoop:
     lw $t2, ($t1)               # t2 = data value of current node
 
-    blt $a0, $t2, addToMiddle   # if(value to add > value of currentnode), add nodes inbetween
+    blt $a0, $t2, addToMiddle   # if(value to add < value of currentnode), add nodes inbetween
 
     lw $t3, 4($t1)              # t3 = address current node is pointing to
     beq $zero, $t3, addToEnd    # if(address = 0), add node to end of list
@@ -146,16 +182,28 @@ addToMiddle:
     j exitInsertProcedure
 
 exitInsertProcedure:
-    move $v0, $a1               # set return value
-
-    lw $ra, ($sp)
+    #epilogos
+	move $v0, $a1       # set return value
+	
+    lw $ra, ($sp)		#restore $ra and return
     add $sp, $sp, 4
     jr $ra
+
+
+
+
 createNode:
 # arg $a0 = int data value
 # return value $v0 = memory address of node
+#--------------------------------------
+#	def createNode(data):
+#   nodeAddress = allocate 8 bytes of memory
+#   nodeAddress.value = data
+#   nodeAddress.next = NULL
+#   RETURN nodeAddress
+#--------------------------------------
 
-
+	#den exei prologo
 
     move $t0, $a0
     #request memory
@@ -166,12 +214,27 @@ createNode:
     sw $t0, ($v0)               #(first 4 bytes of memory requested) = int argument
     sw $zero, 4($v0)            #(last 4 bytes of memory requested) = 0 (terminator)
 
+	#epilogos
+	#v0 = memory address of node
+    jr $ra	#return
 
-    jr $ra
+
+
 printList:
 # arg $a0 = memory address of first node
 # no return value
+#--------------------------------------
+# def printList(head):
+# currentNode = head
+# WHILE currentNode.next <> NULL
+#   currentNode = currentNode.next
+#   PRINT currentNode.value
+#   PRINT " "
+# PRINT newline
+# RETURN
+#--------------------------------------
 
+	#den exei prologo
 
     move $t0, $a0                   # t0 = memory address of first node
 printLoop:
@@ -195,12 +258,33 @@ exitPrintLoop:
     li $v0, 11
     syscall
 
-    jr $ra
+	#epilogos
+    jr $ra	#return
+
+
+
 
 deleteNode:
 # arg $a0 = int data value
 # arg $a1 = memory address of first node
-# return value $v0 = memory address of first node	
+# return value $v0 = memory address of first node
+#--------------------------------------
+# def deleteNode(value, head):
+# previous = head
+# current = head.next
+# WHILE current <> NULL
+#   IF current.value = value
+#     previous.next = current.next
+#     PRINT "Value deleted"
+#     RETURN head
+#   previous = current
+#   current = current.next
+# PRINT "The value wasn't found"
+# RETURN head
+#--------------------------------------	
+	
+	#den exei prologo
+	
 	move $t9,$a1	#save address of first node to t9
 	
 	move $t0,$a1 	#t0 = previous node
@@ -220,8 +304,7 @@ notFound:
 	la $a0,notFoundmessage
 	syscall
 	
-	move $v0,$t9	#v0 = address of first node
-	jr $ra  #return
+	j exitDelete	#goto exitDelete
 	
 del:
 	sw  $t3,4($t0)	#previousnode.next = current.next	
@@ -230,8 +313,12 @@ del:
 	la $a0,valueDeleted
 	syscall
 	
-	move $v0,$t9	#v0 = address of first node
-	jr $ra	#return
+	
+	
+exitDelete:	
+	#epilogos
+	move $v0, $a1     # set return value v0 = memory address of first node
+	jr $ra			  #return 
 	
 
 
